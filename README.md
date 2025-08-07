@@ -69,3 +69,15 @@ This project is licensed under the [MIT License](LICENSE).
 
 If you encounter issues or want to request features:
 - Leave a comment on the YouTube channel: [Bikes with Ben](https://www.youtube.com/@bikes-with-ben)
+
+---
+
+## 🤝 Contributing
+
+If you have ideas for improvements or new features:
+- Fork the repo
+- Make your changes
+- Submit a pull request!
+
+Found a bug or issue? Feel free to open an issue and describe it.
+
