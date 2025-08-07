@@ -1,0 +1,12 @@
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Image editor backup files
+*.bak
+*.tmp
+
+# VSCode or other IDE settings
+.vscode/
+.idea/
+*.swp

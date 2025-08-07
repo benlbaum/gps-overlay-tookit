@@ -1,0 +1,99 @@
+body {
+  font-family: Arial, sans-serif;
+  background-color: #1e1e1e; /* Dark background */
+  color: #ffffff; /* Light text */
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start; /* Start content closer to the top */
+  min-height: 100vh;
+}
+
+.container {
+  text-align: center;
+  max-width: 800px;
+  width: 100%;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.image-container {
+  width: 400px; /* Set the desired width for the image container */
+  height: 150px; /* Set the desired height for the image container */
+  overflow: hidden;
+  display: flex;
+  justify-content: center; /* Center image horizontally */
+  align-items: center; /* Center image vertically */
+  border-radius: 10px; /* Set the border radius for rounded corners */
+  margin-top: 10px; /* Reduce the margin to start content higher on the page */
+  margin-bottom: 10px;
+}
+
+#bikesWithBenImg {
+  width: 100%; /* Ensure the image fills the container width */
+  height: auto; /* Maintain aspect ratio */
+  object-fit: cover; /* Ensure the image covers the container */
+}
+
+h1 {
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+.button-container {
+  display: flex;
+  justify-content: center;
+  gap: 30px; /* Increase the gap between the buttons */
+  margin-top: 20px;
+}
+
+.tool-button {
+  padding: 15px 25px;
+  width: 200px; /* Set equal width for all buttons */
+  background-color: #0078d4;
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+  border-radius: 5px;
+  transition: background-color 0.3s;
+  text-align: center; /* Center the text inside the button */
+}
+
+.tool-button:hover {
+  background-color: #005a9e;
+}
+
+.subheading {
+  font-size: 18px;
+  margin-top: 10px;
+  margin-bottom: 20px;
+  color: #cccccc; /* Lighter text color for subheading */
+}
+
+#instructions p {
+  text-align: justify; /* Justify the text to apply indentation to the second line */
+  margin-left: 20px; /* Adjust the value to set the desired indentation for both lines */
+  }
+  
+  .youtube-icon {
+  width: 100px; /* Adjust the width as needed */
+  height: auto; /* Maintain aspect ratio */
+  margin-top: 10px;  /* Add the glow effect */
+  margin-bottom: 10px;
+  padding: 10px; /* Create space for the shadow */
+  filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.308));
+  }
+  
+  /* Style the YouTube link */
+  .youtube-link {
+  text-decoration: none; /* Remove underline from the link */
+  color: #9f50d4; /* Set the link color to match your button */
+  font-size: 24px; /* Adjust the font size as needed */
+  font-weight: bold; /* Add bold font weight */
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.308); /* Add the glow effect */
+  }
+

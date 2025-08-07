@@ -1,0 +1,183 @@
+body {
+  font-family: Arial, sans-serif;
+  background-color: #1e1e1e; /* Dark background color */
+  color: white; /* Text color */
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.image-container {
+width: 400px; /* Set the desired width for the cropped image */
+height: 150px; /* Set the desired height for the cropped image */
+overflow: hidden;
+display: flex;
+justify-content: center; /* Center horizontally */
+align-items: center; /* Center vertically */
+border-radius: 10px; /* Set the border radius for rounded corners */
+position: relative; /* Add position relative for overlay gradient */
+margin-top: 30px;
+margin-bottom: 10px;
+}
+
+#bikesWithBenImg {
+  max-width: 100%; /* Set the maximum width to 100% to scale down the image */
+  max-height: auto; /* Set the maximum height to 100% to scale down the image */
+  /*clip: rect(0px, 300px, 200px, 0px); /* Define the cropping rectangle (top, right, bottom, left) */
+}
+
+h2 {
+  font-size: 24px; /* Adjust the font size as needed */
+  color: #9f50d4; /* Set the text color */
+  margin-bottom: 20px; /* Add margin below the title */
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.308); /* Add the glow effect */
+}
+
+input[type="file"] {
+background-color: #333; /* Dark input background color */
+color: white; /* Input text color */
+border: none;
+padding: 10px;
+border-radius: 5px;
+margin-bottom: 20px;
+}
+
+/* Style the SVG element to scale down to fit the container */
+svg {
+max-width: 100%; /* Limit the SVG width to the container width */
+max-height: 100%; /* Limit the SVG height to the container height */
+width: auto; /* Reset the width to auto for centering */
+height: auto; /* Reset the height to auto for centering */
+background-color: #333; /* Dark SVG background color */
+border-radius: 5px;
+}
+
+/* Style the SVG container */
+.custom-svg-container {
+width: 100%;
+height: 70vh;
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+overflow: auto;
+margin-bottom: 20px;
+}
+
+/* Style the input table */
+#labelInputTable {
+width: fit-content;
+border-collapse: collapse; /* Remove default spacing between table cells */
+}
+
+#labelInputTable tr {
+height: 40px; /* Add padding to table cells */
+}
+
+#labelInputTable td {
+padding: 5px; /* Add padding to table cells */
+}
+
+/* Style labels to be left-aligned */
+#labelInputTable label {
+display: block;
+text-align: left;
+}
+
+/* Style the color input elements */
+input[type="color"] {
+width: 68px; /* Adjust the width as needed */
+height: 30px;
+}
+
+/* Style the number input elements */
+input[type="number"] {
+width: 60px; /* Adjust the width as needed */
+height: 24px;
+font-size: 16px;
+text-align: center;
+}
+
+/* Style the right columns with specific widths */
+.left-column {
+width: fit-content; /* Set the desired width for the right columns */
+}
+
+/* Style the right columns with specific widths */
+.right-column {
+width: fit-content; /* Set the desired width for the right columns */
+}
+
+/*Always show the number entry arrows*/
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button {  
+ opacity: 1;
+}
+
+/* Style the download buttons */
+.download-button {
+background-color: #0078d4; /* Button background color */
+color: white; /* Button text color */
+border: none;
+padding: 10px 20px; /* Adjust padding for button size */
+border-radius: 5px;
+margin-top: 10px;
+margin-bottom: 10px;
+margin-right: 10px; /* Add margin between buttons */
+cursor: pointer;
+}
+
+/* Center the buttons horizontally */
+#buttonContainer {
+display: flex;
+align-items: center;
+justify-content: center;
+}
+
+/* Show the button container when other content is visible */
+#buttonContainer.visible {
+display: flex;
+}
+
+/* Hide elements with the 'hidden' class */
+.hidden {
+display: none;
+}
+
+hr { 
+display: block;
+margin-top: 0.5em;
+margin-bottom: 0.5em;
+margin-left: auto;
+margin-right: auto;
+border-style: solid;
+border-width: 1px;
+width: 50%;
+}
+
+#instructions p {
+text-align: justify; /* Justify the text to apply indentation to the second line */
+margin-left: 20px; /* Adjust the value to set the desired indentation for both lines */
+}
+
+.youtube-icon {
+width: 100px; /* Adjust the width as needed */
+height: auto; /* Maintain aspect ratio */
+margin-top: 10px;  /* Add the glow effect */
+margin-bottom: 10px;
+padding: 10px; /* Create space for the shadow */
+filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.308));
+}
+
+/* Style the YouTube link */
+.youtube-link {
+text-decoration: none; /* Remove underline from the link */
+color: #9f50d4; /* Set the link color to match your button */
+font-size: 24px; /* Adjust the font size as needed */
+font-weight: bold; /* Add bold font weight */
+text-shadow: 0 0 10px rgba(255, 255, 255, 0.308); /* Add the glow effect */
+}
