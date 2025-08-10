@@ -1,107 +1,184 @@
 <!DOCTYPE html>
 <html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="stylesheet" href="gpx-svg-spl-styles.css" />
+        <title>Bikes with Ben | GPS Animator Tool</title>
+    </head>
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="gpx-svg-spl-styles.css">
-    <title>Bikes with Ben | GPS Animator Tool</title>
-</head>
+    <body>
+        <!-- Add the image element -->
+        <div class="image-container">
+            <img src="../images/YouTube Banner.png" alt="Bikes with Ben" id="bikesWithBenImg" />
+            <div class="image-overlay"></div>
+        </div>
 
-<body>
-    <!-- Add the image element -->
-    <div class="image-container">
-        <img src="../images/YouTube Banner.png" alt="Bikes with Ben" id="bikesWithBenImg">
-        <div class="image-overlay"></div>
-    </div>
+        <h2>GPS Animator Tool</h2>
 
-    <h2>GPS Animator Tool</h2>
+        <label for="fileInput" id="fileInputLabel" style="margin-bottom: 5px">Select a GPX File</label>
+        <input type="file" id="fileInput" accept=".gpx" />
 
-    <label for="fileInput" id="fileInputLabel" style="margin-bottom: 5px;">Select a GPX File</label>
-    <input type="file" id="fileInput" accept=".gpx" onchange="handleFile()">
+        <!-- Container for the route SVG -->
+        <div id="svgContainer" class="custom-svg-container hidden"></div>
+        <!-- Container for the elevation SVG -->
+        <div id="elevationContainer" class="custom-svg-container hidden"></div>
 
-    <div id="svgContainer" class="custom-svg-container hidden"></div>
+        <!-- Settings container using CSS grid -->
+        <div id="labelInputTable" class="options-grid hidden">
+            <!-- Column 1: Preprocessing and Main Options -->
+            <div class="options-column">
+                <div class="section">
+                    <h3>Preprocessing</h3>
+                    <div class="form-row">
+                        <input type="checkbox" id="removePauses" />
+                        <label for="removePauses">Enable idle removal</label>
+                        <span
+                            class="tooltip-icon"
+                            data-tooltip="When enabled, segments with minimal movement are removed from the animation."
+                            >?</span
+                        >
+                    </div>
+                    <div class="form-row">
+                        <input type="number" id="distanceThreshold" value="5" min="0" step="0.1" />
+                        <label for="distanceThreshold">Idle distance threshold (m)</label>
+                        <span
+                            class="tooltip-icon"
+                            data-tooltip="Minimum distance between GPS points considered as movement. Values below this (in metres) are treated as standing still."
+                            >?</span
+                        >
+                    </div>
+                    <div class="form-row">
+                        <input type="number" id="pauseThreshold" value="2" min="0" step="0.1" />
+                        <label for="pauseThreshold">Idle time threshold (s)</label>
+                        <span
+                            class="tooltip-icon"
+                            data-tooltip="Minimum duration (in seconds) of continuous no movement required to remove a pause."
+                            >?</span
+                        >
+                    </div>
+                    <div class="form-row">
+                        <input type="number" id="timeGapThreshold" value="60" min="0" step="1" />
+                        <label for="timeGapThreshold">Time gap threshold (s)</label>
+                        <span
+                            class="tooltip-icon"
+                            data-tooltip="If the time difference between two points exceeds this value, the gap is reduced to the average of surrounding intervals."
+                            >?</span
+                        >
+                    </div>
+                </div>
+                <div class="section">
+                    <h3>Main Options</h3>
+                    <div class="form-row">
+                        <input type="number" id="frameRate" value="60" style="font-weight: bold" />
+                        <label for="frameRate"><strong>Video Frame Rate</strong></label>
+                    </div>
+                </div>
+                <div class="section">
+                    <h3>GPS Track Options</h3>
+                    <div class="form-row">
+                        <input type="color" id="mainColor" value="#FFA500" />
+                        <label for="mainColor">Main Color</label>
+                    </div>
+                    <div class="form-row">
+                        <input type="color" id="shadowColor" value="#000000" />
+                        <label for="shadowColor">Drop Shadow Color</label>
+                    </div>
+                    <div class="form-row">
+                        <input type="number" id="mainWidth" value="2" />
+                        <label for="mainWidth">Main Width</label>
+                    </div>
+                    <div class="form-row">
+                        <input type="number" id="shadowWidth" value="5" />
+                        <label for="shadowWidth">Drop Shadow Width</label>
+                    </div>
+                    <div class="form-row">
+                        <input type="number" id="shadowOffset" value="5" />
+                        <label for="shadowOffset">Drop Shadow Offset</label>
+                    </div>
+                </div>
+            </div>
+            <!-- Column 2: GPS Track Options and Elevation Graph Options -->
+            <div class="options-column">
+                <div class="section">
+                    <h3>Elevation Graph Options</h3>
+                    <div class="form-row">
+                        <input type="color" id="altMainColor" value="#40e0d0" />
+                        <label for="altMainColor">Elevation Color</label>
+                    </div>
+                    <div class="form-row">
+                        <input type="color" id="altShadowColor" value="#000000" />
+                        <label for="altShadowColor">Elevation Shadow Color</label>
+                    </div>
+                    <div class="form-row">
+                        <input type="number" id="altMainWidth" value="2" />
+                        <label for="altMainWidth">Elevation Width</label>
+                    </div>
+                    <div class="form-row">
+                        <input type="number" id="altShadowWidth" value="5" />
+                        <label for="altShadowWidth">Elevation Shadow Width</label>
+                    </div>
+                    <div class="form-row">
+                        <input type="number" id="altShadowOffset" value="5" />
+                        <label for="altShadowOffset">Elevation Shadow Offset</label>
+                    </div>
+                    <div class="form-row">
+                        <input type="number" id="altWidth" value="1920" />
+                        <label for="altWidth">Elevation SVG Width (px)</label>
+                    </div>
+                    <div class="form-row">
+                        <input type="number" id="altHeight" value="300" />
+                        <label for="altHeight">Elevation SVG Height (px)</label>
+                    </div>
+                    <div class="form-row">
+                        <input type="checkbox" id="altShowGrid" />
+                        <label for="altShowGrid">Show Grid & Fill for Elevation</label>
+                    </div>
+                    <div class="form-row">
+                        <input type="color" id="altFillColor" value="#40e0d0" />
+                        <label for="altFillColor">Elevation Fill Color</label>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-    <table id="labelInputTable" class="input-table hidden">
-        <tr>
-            <td class="left-column">
-                <input type="number" id="frameRate" value="60" style="font-weight: bold;">
-            </td>
-            <td class="right-column">
-                <label for="frameRate"><strong>Video Frame Rate</strong></label>
-            </td>
-        </tr>
-        <tr>
-            <td class="left-column">
-                <input type="color" id="mainColor" value="#FFA500">
-            </td>
-            <td class="right-column">
-                <label for="mainColor">Main Color</label>
-            </td>
-        </tr>
-        <tr>
-            <td class="left-column">
-                <input type="color" id="shadowColor" value="#000000">
-            </td>
-            <td class="right-column">
-                <label for="shadowColor">Drop Shadow Color</label>
-            </td>
-        </tr>
-        <tr>
-            <td class="left-column">
-                <input type="number" id="mainWidth" value="2">
-            </td>
-            <td class="right-column">
-                <label for="mainWidth">Main Width</label>
-            </td>
-        </tr>
-        <tr>
-            <td class="left-column">
-                <input type="number" id="shadowWidth" value="5">
-            </td>
-            <td class="right-column">
-                <label for="shadowWidth">Drop Shadow Width</label>
-            </td>
-        </tr>
-        <tr>
-            <td class="left-column">
-                <input type="number" id="shadowOffset" value="5">
-            </td>
-            <td class="right-column">
-                <label for="shadowOffset">Drop Shadow Offset</label>
-            </td>
-        </tr>
-    </table>
+        <!-- Download buttons -->
+        <div id="buttonContainer">
+            <button id="svgDownloadButton" class="download-button" style="display: none">Download route .svg</button>
+            <button id="splDownloadButton" class="download-button" style="display: none">Download route .spl</button>
+            <button id="altSvgDownloadButton" class="download-button" style="display: none">
+                Download elevation .svg
+            </button>
+            <button id="altSplDownloadButton" class="download-button" style="display: none">
+                Download elevation .spl
+            </button>
+        </div>
 
-    <!-- Download buttons -->
-    <div id="buttonContainer">
-        <button id="svgDownloadButton" class="download-button" style="display: none;" onclick="downloadSVG()">Download .svg</button>
-        <button id="splDownloadButton" class="download-button" style="display: none;">Download .spl</button>
-    </div>
+        <hr />
 
-    <hr>
+        <div id="instructions" style="max-width: 400px">
+            <h2 style="text-align: center">Instructions</h2>
+            <ol>
+                <strong>Step 1: Upload GPX File</strong>
+                <br />
+                <br />
+                <strong>Step 2: Customize</strong>
+                <br />
+                <br />
+                <strong>Step 3: Download SVG & SPL Files</strong>
+            </ol>
+        </div>
 
-    <div id="instructions" style="max-width: 400px;"">
-        <h2 style="text-align: center;"">Instructions</h2>
-        <ol>
-            <strong>Step 1: Upload GPX File</strong>
-            <br>
-            <br>
-            <strong>Step 2: Customize</strong>
-            <br>
-            <br>
-            <strong>Step 3: Download SVG & SPL Files</strong>
-        </ol>
-    </div>
+        <hr style="margin-top: 20px" />
 
-    <hr style="margin-top: 20px">
+        <a class="youtube-link" href="https://www.youtube.com/@bikes-with-ben" style="margin-top: 20px"
+            >Watch the Tutorial Now!</a
+        >
+        <a class="youtube-link" href="https://www.youtube.com/@bikes-with-ben">
+            <img src="../images/youtube-icon.png" alt="YouTube Icon" class="youtube-icon" />
+        </a>
 
-    <a class="youtube-link" href="https://www.youtube.com/@bikes-with-ben" style="margin-top: 20px;">Watch the Tutorial Now!</a>
-    <a class="youtube-link" href="https://www.youtube.com/@bikes-with-ben">
-        <img src="../images/youtube-icon.png" alt="YouTube Icon" class="youtube-icon">
-    </a>
-
-    <script src="gpx-svg-spl-script.js"></script>
-</body>
-
+        <!-- Include modified script for route and elevation support -->
+        <script src="gpx-svg-spl-script.js"></script>
+    </body>
 </html>
