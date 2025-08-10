@@ -6,7 +6,7 @@
   "semi": true,
   "trailingComma": "none",
   "arrowParens": "avoid",
-  "endOfLine": "lf",
+  "endOfLine": "crlf",
   "overrides": [
     {
       "files": ["*.css"],
