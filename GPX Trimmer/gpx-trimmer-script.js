@@ -5,12 +5,12 @@ let originalFileName; // Variable to store the original file name
 
 document.getElementById('fileInput').addEventListener('change', function () {
     const file = this.files[0];
-    
+
     if (file && file.name.endsWith('.gpx')) {
         originalFileName = file.name; // Store the original file name
 
         const reader = new FileReader();
-        
+
         reader.onload = function (e) {
             gpxDataGlobal = e.target.result; // Store GPX data globally
             displayGPX(gpxDataGlobal, 0, 100); // Initial display without trimming
@@ -19,7 +19,7 @@ document.getElementById('fileInput').addEventListener('change', function () {
             document.getElementById('trimControls').classList.remove('hidden');
             document.getElementById('downloadButton').classList.remove('hidden');
         };
-        
+
         reader.readAsText(file);
     } else {
         alert('Please upload a valid GPX file.');
@@ -44,9 +44,11 @@ function displayGPX(gpxData, startTrimPercent, endTrimPercent) {
 
     gpxLayer = new L.GPX(trimmedGPX, {
         async: true
-    }).on('loaded', function(e) {
-        map.fitBounds(e.target.getBounds());
-    }).addTo(map);
+    })
+        .on('loaded', function (e) {
+            map.fitBounds(e.target.getBounds());
+        })
+        .addTo(map);
 
     // Enable download button with trimmed GPX data
     enableDownload(trimmedGPX);

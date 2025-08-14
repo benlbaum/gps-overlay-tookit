@@ -2,7 +2,7 @@
 const radians = degrees => degrees * (Math.PI / 180);
 
 // Generate SVG for the route path
-function generateSVG(trackPoints, mainColor, shadowColor, mainWidth, shadowWidth, shadowOffset) {
+function generateSVG(trackPoints, mainColor, shadowColor, mainWidth, shadowWidth, shadowOffset, dotSize = 10) {
     // Find min and max latitude and longitude
     let minLat = Infinity;
     let maxLat = -Infinity;
@@ -39,7 +39,7 @@ function generateSVG(trackPoints, mainColor, shadowColor, mainWidth, shadowWidth
     // The margin is based on the size of the main dot (radius 10), the shadow offset,
     // and the shadow stroke width. This ensures there is enough space around the
     // entire drawing so that the animated dot and shadow remain fully visible.
-    const dotRadius = 10;
+    const dotRadius = parseFloat(dotSize);
     const margin = Math.max(10, dotRadius + shadowOffset + shadowWidth);
     const viewBoxWidth = svgWidth + 2 * margin;
     const viewBoxHeight = svgHeight + 2 * margin;
@@ -67,14 +67,14 @@ function generateSVG(trackPoints, mainColor, shadowColor, mainWidth, shadowWidth
     const circle = document.createElementNS(svgNS, 'circle');
     circle.setAttribute('cx', svgWidth / 2);
     circle.setAttribute('cy', svgHeight / 2);
-    circle.setAttribute('r', 10);
+    circle.setAttribute('r', dotRadius);
     circle.setAttribute('fill', generateSlightlyDifferentColor(mainColor));
     circle.setAttribute('id', 'MainDot');
 
     const circleOutline = document.createElementNS(svgNS, 'circle');
     circleOutline.setAttribute('cx', svgWidth / 2);
     circleOutline.setAttribute('cy', svgHeight / 2);
-    circleOutline.setAttribute('r', 12);
+    circleOutline.setAttribute('r', dotRadius + dotRadius * 0.2);
     circleOutline.setAttribute('fill', generateSlightlyDifferentColor(shadowColor));
     circleOutline.setAttribute('id', 'OutlineDot');
 
@@ -196,7 +196,8 @@ function generateElevationSVG(
     svgWidth,
     svgHeight,
     showGrid = false,
-    fillColor = null
+    fillColor = null,
+    dotSize = 10
 ) {
     let minEle = Infinity;
     let maxEle = -Infinity;
@@ -227,7 +228,8 @@ function generateElevationSVG(
     // animated dot (and its outline) plus any shadow width/offset are fully visible.
     // The outline dot radius is 12, so use that as the base. Add the shadowOffset
     // and shadowWidth to provide additional space. Fall back to a minimum of 10.
-    const dotOutlineRadius = 12;
+    const dotRadius = parseFloat(dotSize);
+    const dotOutlineRadius = dotRadius + dotRadius * 0.2;
     const margin = Math.max(10, dotOutlineRadius + shadowOffset + shadowWidth);
 
     // Reserve extra space at the bottom for x-axis labels when grid is enabled
@@ -291,14 +293,14 @@ function generateElevationSVG(
     // Center the dot vertically within the final SVG height to align with DaVinci resolve's anchor
     const centerY = (svgHeight + (showGrid ? 40 : 0)) / 2;
     circle.setAttribute('cy', centerY);
-    circle.setAttribute('r', 10);
+    circle.setAttribute('r', dotRadius);
     circle.setAttribute('fill', generateSlightlyDifferentColor(mainColor));
     circle.setAttribute('id', 'ElevationMainDot');
 
     const circleOutline = document.createElementNS(svgNS, 'circle');
     circleOutline.setAttribute('cx', svgWidth / 2);
     circleOutline.setAttribute('cy', centerY);
-    circleOutline.setAttribute('r', 12);
+    circleOutline.setAttribute('r', dotRadius + dotRadius * 0.2);
     circleOutline.setAttribute('fill', generateSlightlyDifferentColor(shadowColor));
     circleOutline.setAttribute('id', 'ElevationOutlineDot');
 
@@ -766,6 +768,8 @@ function handleFile() {
     const altHeight = parseInt(document.getElementById('altHeight').value, 10);
     const altShowGrid = document.getElementById('altShowGrid').checked;
     const altFillColor = document.getElementById('altFillColor').value;
+
+    const dotSize = parseInt(document.getElementById('dotSize').value, 10);
     const file = fileInput.files[0];
 
     if (file) {
@@ -776,7 +780,15 @@ function handleFile() {
             const xmlDoc = parser.parseFromString(gpxData, 'text/xml');
             const trackPoints = xmlDoc.querySelectorAll('trkpt');
             // Route SVG
-            const routeSvg = generateSVG(trackPoints, mainColor, shadowColor, mainWidth, shadowWidth, shadowOffset);
+            const routeSvg = generateSVG(
+                trackPoints,
+                mainColor,
+                shadowColor,
+                mainWidth,
+                shadowWidth,
+                shadowOffset,
+                dotSize
+            );
             svgContainer.innerHTML = '';
             svgContainer.appendChild(routeSvg);
             // Elevation SVG
@@ -790,7 +802,8 @@ function handleFile() {
                 altWidth,
                 altHeight,
                 altShowGrid,
-                altFillColor
+                altFillColor,
+                dotSize
             );
             elevationContainer.innerHTML = '';
             elevationContainer.appendChild(elevationSvg);
@@ -843,6 +856,9 @@ document.getElementById('altWidth').addEventListener('input', handleFileWithDela
 document.getElementById('altHeight').addEventListener('input', handleFileWithDelay);
 document.getElementById('altShowGrid').addEventListener('change', handleFileWithDelay);
 document.getElementById('altFillColor').addEventListener('input', handleFileWithDelay);
+
+// Hook general parameters to handleFileWithDelay
+document.getElementById('dotSize').addEventListener('input', handleFileWithDelay);
 
 // Set up route SPL download behaviour
 const splDownloadButton = document.getElementById('splDownloadButton');

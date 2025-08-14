@@ -28,6 +28,7 @@ body {
   max-width: 1000px; /* Set the maximum width to 100% to scale down the image */
   max-height: auto; /* Set the maximum height to 100% to scale down the image */
   /*clip: rect(0px, 300px, 200px, 0px); /* Define the cropping rectangle (top, right, bottom, left) */
+  overflow: auto;
 }
 
 h2 {

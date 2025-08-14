@@ -44,7 +44,7 @@ h1 {
   margin-bottom: 20px;
 }
 
-input[type="file"] {
+input[type='file'] {
   background-color: #333; /* Dark input background */
   color: #ffffff; /* Light input text */
   border: none;
@@ -76,7 +76,7 @@ input[type="file"] {
   color: #ffffff; /* Light text */
 }
 
-input[type="range"] {
+input[type='range'] {
   width: 100%;
   margin-bottom: 10px;
 }
