@@ -5,6 +5,7 @@
 ## 🌍 Tools Included
 
 ### 📌 GPX to SVG/SPL Converter
+
 - Converts `.gpx` files to:
   - **SVG** route overlays
   - **SPL** timing files compatible with DaVinci Resolve
@@ -14,6 +15,7 @@
 - Real-time preview before download
 
 ### ✂️ GPX Trimmer Tool
+
 - Visually trims the start and end of a GPX track
 - Live map preview using Leaflet
 - Export the cleaned `.gpx` file
@@ -52,7 +54,9 @@ GPX Suite Website - Rev 0
 ---
 
 ## 🎬 Use Case: Mountain Biking
+
 Originally designed to overlay GPS tracks on MTB videos recorded with a GoPro, this toolkit allows riders to:
+
 - Trim out parking lot/road sections
 - Customize visuals to match their video aesthetic
 - Create high-quality overlays synced to frame rate
@@ -68,6 +72,7 @@ This project is licensed under the [MIT License](LICENSE).
 ## 🙋 Support
 
 If you encounter issues or want to request features:
+
 - Leave a comment on the YouTube channel: [Bikes with Ben](https://www.youtube.com/@bikes-with-ben)
 
 ---
@@ -75,9 +80,9 @@ If you encounter issues or want to request features:
 ## 🤝 Contributing
 
 If you have ideas for improvements or new features:
+
 - Fork the repo
 - Make your changes
 - Submit a pull request!
 
 Found a bug or issue? Feel free to open an issue and describe it.
-

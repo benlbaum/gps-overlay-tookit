@@ -77,23 +77,22 @@ h1 {
 #instructions p {
   text-align: justify; /* Justify the text to apply indentation to the second line */
   margin-left: 20px; /* Adjust the value to set the desired indentation for both lines */
-  }
-  
-  .youtube-icon {
+}
+
+.youtube-icon {
   width: 100px; /* Adjust the width as needed */
   height: auto; /* Maintain aspect ratio */
-  margin-top: 10px;  /* Add the glow effect */
+  margin-top: 10px; /* Add the glow effect */
   margin-bottom: 10px;
   padding: 10px; /* Create space for the shadow */
   filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.308));
-  }
-  
-  /* Style the YouTube link */
-  .youtube-link {
+}
+
+/* Style the YouTube link */
+.youtube-link {
   text-decoration: none; /* Remove underline from the link */
   color: #9f50d4; /* Set the link color to match your button */
   font-size: 24px; /* Adjust the font size as needed */
   font-weight: bold; /* Add bold font weight */
   text-shadow: 0 0 10px rgba(255, 255, 255, 0.308); /* Add the glow effect */
-  }
-
+}

@@ -1,39 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GPX File Previewer</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/2.1.0/gpx.min.js" defer></script>
-    <link rel="stylesheet" href="gpx-trimmer-styles.css">
-</head>
-<body>
-    <div class="container">
-        <!-- Add the image element -->
-        <div class="image-container">
-            <img src="../images/YouTube Banner.png" alt="Bikes with Ben" id="bikesWithBenImg">
-            <div class="image-overlay"></div>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>GPX File Previewer</title>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/2.1.0/gpx.min.js" defer></script>
+        <link rel="stylesheet" href="gpx-trimmer-styles.css" />
+    </head>
+    <body>
+        <div class="container">
+            <!-- Add the image element -->
+            <div class="image-container">
+                <img src="../images/YouTube Banner.png" alt="Bikes with Ben" id="bikesWithBenImg" />
+                <div class="image-overlay"></div>
+            </div>
+
+            <h1>GPX Trimmer</h1>
+            <input type="file" id="fileInput" accept=".gpx" aria-label="Select a GPX File" />
+
+            <!-- Sliders for trimming (Initially hidden) -->
+            <div class="trim-controls hidden" id="trimControls">
+                <label for="startTrim">Start Trim:</label>
+                <input type="range" id="startTrim" value="0" min="0" max="100" />
+
+                <label for="endTrim">End Trim:</label>
+                <input type="range" id="endTrim" value="100" min="0" max="100" />
+            </div>
+
+            <!-- Download Button (Initially hidden) -->
+            <button id="downloadButton" class="download-button hidden">Download Trimmed GPX</button>
+
+            <div id="map" class="map-container"></div>
         </div>
-
-        <h1>GPX Trimmer</h1>
-        <input type="file" id="fileInput" accept=".gpx" aria-label="Select a GPX File">
-        
-        <!-- Sliders for trimming (Initially hidden) -->
-        <div class="trim-controls hidden" id="trimControls">
-            <label for="startTrim">Start Trim:</label>
-            <input type="range" id="startTrim" value="0" min="0" max="100">
-            
-            <label for="endTrim">End Trim:</label>
-            <input type="range" id="endTrim" value="100" min="0" max="100">
-        </div>
-
-        <!-- Download Button (Initially hidden) -->
-        <button id="downloadButton" class="download-button hidden">Download Trimmed GPX</button>
-
-        <div id="map" class="map-container"></div>
-    </div>
-    <script src="gpx-trimmer-script.js"></script>
-</body>
+        <script src="gpx-trimmer-script.js"></script>
+    </body>
 </html>
