@@ -416,7 +416,14 @@ function generateElevationSVG(
 }
 
 // Generate SPL for elevation profile
-function generateElevationSPL(trackPoints, frameRate, compressedFrames = null) {
+// Generate SPL for elevation profile. This function maps the travelled distance
+// along the GPX track to the horizontal position in the elevation graph and
+// computes fractions based on the pixel length of the elevation path. The
+// svgWidth and svgHeight parameters correspond to the user‑defined size of
+// the elevation SVG (excluding margins). By using this mapping, the animated
+// dot moves in sync with the GPS track even when the visible elevation path
+// has uniform spacing.
+function generateElevationSPL(trackPoints, frameRate, svgWidth, svgHeight, compressedFrames = null) {
     const frame_rate = parseInt(frameRate, 10);
     let time_elapsed = 0;
     let prev_time = null;
@@ -427,25 +434,111 @@ function generateElevationSPL(trackPoints, frameRate, compressedFrames = null) {
         return splLines.join('\n');
     }
 
+    // Precompute cumulative distances along the track (in km) and total distance
+    const cumulativeDistances = new Array(totalPoints).fill(0);
+    let totalDistanceKm = 0;
+    {
+        let prev_lat_d = null;
+        let prev_lon_d = null;
+        const earthRadiusKm = 6371.0;
+        for (let i = 0; i < totalPoints; i++) {
+            const trkpt = trackPoints[i];
+            const lat = parseFloat(trkpt.getAttribute('lat'));
+            const lon = parseFloat(trkpt.getAttribute('lon'));
+            if (prev_lat_d !== null && prev_lon_d !== null) {
+                const dlat = radians(lat - prev_lat_d);
+                const dlon = radians(lon - prev_lon_d);
+                const a = Math.sin(dlat / 2) ** 2 + Math.cos(radians(prev_lat_d)) * Math.cos(radians(lat)) * Math.sin(dlon / 2) ** 2;
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                const dist = earthRadiusKm * c;
+                totalDistanceKm += dist;
+                cumulativeDistances[i] = totalDistanceKm;
+            } else {
+                cumulativeDistances[i] = 0;
+            }
+            prev_lat_d = lat;
+            prev_lon_d = lon;
+        }
+    }
+    // Compute elevation values and min/max to map to pixel height
+    let minEle = Infinity;
+    let maxEle = -Infinity;
+    const eleValues = new Array(totalPoints);
     for (let i = 0; i < totalPoints; i++) {
-        let frameIndex;
+        const eleNode = trackPoints[i].getElementsByTagName('ele')[0];
+        let val;
+        if (eleNode) {
+            val = parseFloat(eleNode.textContent);
+        }
+        if (isNaN(val)) {
+            val = 0;
+        }
+        eleValues[i] = val;
+        if (val < minEle) minEle = val;
+        if (val > maxEle) maxEle = val;
+    }
+    const eleRange = maxEle - minEle || 1;
+    // Uniform x and y positions for the visible path
+    const xUniform = new Array(totalPoints);
+    const yUniform = new Array(totalPoints);
+    const xInc = totalPoints > 1 ? svgWidth / (totalPoints - 1) : 0;
+    for (let i = 0; i < totalPoints; i++) {
+        const x = i * xInc;
+        xUniform[i] = x;
+        const y = svgHeight - (eleValues[i] - minEle) * (svgHeight / eleRange);
+        yUniform[i] = y;
+    }
+    // Compute cumulative pixel lengths along the visible path
+    const cumPixelLengths = new Array(totalPoints).fill(0);
+    let totalPixelLength = 0;
+    for (let i = 1; i < totalPoints; i++) {
+        const dx = xUniform[i] - xUniform[i - 1];
+        const dy = yUniform[i] - yUniform[i - 1];
+        const segLen = Math.sqrt(dx * dx + dy * dy);
+        totalPixelLength += segLen;
+        cumPixelLengths[i] = totalPixelLength;
+    }
 
+    // Generate each SPL line
+    for (let i = 0; i < totalPoints; i++) {
+        // Determine frame index
+        let frameIndex;
         if (compressedFrames) {
             frameIndex = compressedFrames[i];
         } else {
             const trkpt = trackPoints[i];
             const timeStr = trkpt.querySelector('time').textContent;
-
             if (prev_time !== null) {
                 const prevDate = new Date(prev_time);
                 const currDate = new Date(timeStr);
                 const diff = (currDate - prevDate) / 1000;
                 time_elapsed += diff * frame_rate;
             }
-            prev_time = trkpt.querySelector('time').textContent;
+            prev_time = trackPoints[i].querySelector('time').textContent;
             frameIndex = Math.round(time_elapsed);
         }
-        const fraction = totalPoints > 1 ? i / (totalPoints - 1) : 0;
+        // Compute the fraction mapping distance to pixel length
+        let fraction;
+        if (totalDistanceKm > 0 && totalPixelLength > 0) {
+            // Fraction of total distance travelled
+            const s = cumulativeDistances[i] / totalDistanceKm;
+            // Map s to the corresponding pixel fraction along the arc length
+            const pos = s * (totalPoints - 1);
+            const idxLow = Math.floor(pos);
+            const alpha = pos - idxLow;
+            let pixelFraction;
+            if (idxLow >= totalPoints - 1) {
+                pixelFraction = 1;
+            } else {
+                const pLow = cumPixelLengths[idxLow] / totalPixelLength;
+                const pHigh = cumPixelLengths[idxLow + 1] / totalPixelLength;
+                pixelFraction = pLow + alpha * (pHigh - pLow);
+            }
+            fraction = pixelFraction;
+        } else {
+            // If no distance or pixel length, fallback to uniform fraction
+            fraction = totalPoints > 1 ? i / (totalPoints - 1) : 0;
+        }
         splLines.push(`${frameIndex} ${fraction}`);
     }
 
@@ -939,7 +1032,10 @@ altSplDownloadButton.addEventListener('click', () => {
             }
             const frames = compressedFramesInfo ? compressedFramesInfo.compressedFrames : null;
             const frameRate = document.getElementById('frameRate').value;
-            const splContent = generateElevationSPL(trackPoints, frameRate, frames);
+            // Read elevation graph dimensions from inputs to map distance to pixel positions
+            const altWidthVal = parseFloat(document.getElementById('altWidth').value);
+            const altHeightVal = parseFloat(document.getElementById('altHeight').value);
+            const splContent = generateElevationSPL(trackPoints, frameRate, altWidthVal, altHeightVal, frames);
             downloadElevationSPL(splContent, totalDuration);
         };
         reader.readAsText(file);
