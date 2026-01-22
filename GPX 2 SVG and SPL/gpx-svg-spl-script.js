@@ -1,6 +1,40 @@
 // Function to convert degrees to radians
 const radians = degrees => degrees * (Math.PI / 180);
 
+// Parse GPX track points into a custom structure for easier access
+function parseTrackPoints(gpxTrackPoints) {
+    return Array.from(gpxTrackPoints).map(trkpt => {
+        const lat = parseFloat(trkpt.getAttribute('lat'));
+        const lon = parseFloat(trkpt.getAttribute('lon'));
+
+        // Get time
+        const timeNode = trkpt.querySelector('time');
+        const time = timeNode ? new Date(timeNode.textContent) : null;
+
+        // Get elevation
+        const eleNode = trkpt.getElementsByTagName('ele')[0];
+        const ele = eleNode ? parseFloat(eleNode.textContent) : 0;
+
+        return {
+            lat: lat,
+            lon: lon,
+            time: time,
+            ele: ele
+        };
+    });
+}
+
+// Compute haversine distances (in km) between points
+function distanceInKm(lat1, lon1, lat2, lon2) {
+    const earthRadius = 6371.0; // km
+    const dlat = radians(lat2 - lat1);
+    const dlon = radians(lon2 - lon1);
+    const a = Math.sin(dlat / 2) ** 2 + Math.cos(radians(lat1)) * Math.cos(radians(lat2)) * Math.sin(dlon / 2) ** 2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return earthRadius * c;
+}
+
 // Generate SVG for the route path
 function generateSVG(trackPoints, mainColor, shadowColor, mainWidth, shadowWidth, shadowOffset, dotSize = 10) {
     // Find min and max latitude and longitude
@@ -10,8 +44,8 @@ function generateSVG(trackPoints, mainColor, shadowColor, mainWidth, shadowWidth
     let maxLon = -Infinity;
 
     for (const point of trackPoints) {
-        const lat = parseFloat(point.getAttribute('lat'));
-        const lon = parseFloat(point.getAttribute('lon'));
+        const lat = point.lat;
+        const lon = point.lon;
         minLat = Math.min(minLat, lat);
         maxLat = Math.max(maxLat, lat);
         minLon = Math.min(minLon, lon);
@@ -82,8 +116,8 @@ function generateSVG(trackPoints, mainColor, shadowColor, mainWidth, shadowWidth
     let shadowPathData = '';
 
     for (const point of trackPoints) {
-        const lat = parseFloat(point.getAttribute('lat'));
-        const lon = parseFloat(point.getAttribute('lon'));
+        const lat = point.lat;
+        const lon = point.lon;
         const x = (lon - minLon) * (svgWidth / lonRange);
         const y = svgHeight - (lat - minLat) * (svgHeight / latRange);
 
@@ -103,79 +137,60 @@ function generateSVG(trackPoints, mainColor, shadowColor, mainWidth, shadowWidth
 
 // Generate SPL for the route path
 function generateSPL(trackPoints, frameRate, compressedFrames = null) {
-    const earth_radius = 3958.8; // miles
-    let total_distance = 0;
-    let point_distance = 0;
-    let prev_lat = null;
-    let prev_lon = null;
-    let prev_time = null;
-    let time_elapsed = 0;
-    const frame_rate = parseInt(frameRate, 10);
+    let totalDistance = 0;
+    let pointDistance = 0;
+    let prevLat = null;
+    let prevLon = null;
+    let prevTime = null;
+    let timeElapsed = 0;
+    const frameRateLocal = parseInt(frameRate, 10);
     const splLines = ['DFSP'];
 
     // calculate total distance
-    for (const trkpt of trackPoints) {
-        const lat = parseFloat(trkpt.getAttribute('lat'));
-        const lon = parseFloat(trkpt.getAttribute('lon'));
+    for (const point of trackPoints) {
+        const lat = point.lat;
+        const lon = point.lon;
 
-        if (prev_lat !== null && prev_lon !== null) {
-            const dlat = radians(lat - prev_lat);
-            const dlon = radians(lon - prev_lon);
-            const a =
-                Math.sin(dlat / 2) ** 2 +
-                Math.cos(radians(prev_lat)) * Math.cos(radians(lat)) * Math.sin(dlon / 2) ** 2;
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-            total_distance += earth_radius * c;
+        if (prevLat !== null && prevLon !== null) {
+            totalDistance += distanceInKm(prevLat, prevLon, lat, lon);
         }
-        prev_lat = lat;
-        prev_lon = lon;
+        prevLat = lat;
+        prevLon = lon;
     }
 
-    prev_lat = null;
-    prev_lon = null;
+    prevLat = null;
+    prevLon = null;
 
-    // iterate through points
     let index = 0;
+    for (const point of trackPoints) {
+        const lat = point.lat;
+        const lon = point.lon;
 
-    for (const trkpt of trackPoints) {
-        const lat = parseFloat(trkpt.getAttribute('lat'));
-        const lon = parseFloat(trkpt.getAttribute('lon'));
-
-        if (prev_lat !== null && prev_lon !== null) {
-            const dlat = radians(lat - prev_lat);
-            const dlon = radians(lon - prev_lon);
-            const a =
-                Math.sin(dlat / 2) ** 2 +
-                Math.cos(radians(prev_lat)) * Math.cos(radians(lat)) * Math.sin(dlon / 2) ** 2;
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-            point_distance += earth_radius * c;
+        if (prevLat !== null && prevLon !== null) {
+            pointDistance += distanceInKm(prevLat, prevLon, lat, lon);
         }
 
-        prev_lat = lat;
-        prev_lon = lon;
+        prevLat = lat;
+        prevLon = lon;
         let frameIndex;
 
         if (compressedFrames) {
             frameIndex = compressedFrames[index];
         } else {
-            const time = trkpt.querySelector('time').textContent;
-            let time_diff;
+            const time = point.time;
+            let timeDiff;
 
-            if (prev_time !== null) {
-                const prev_time_obj = new Date(prev_time);
-                const current_time_obj = new Date(time);
-                time_diff = (current_time_obj - prev_time_obj) / 1000;
+            if (prevTime !== null && time !== null) {
+                timeDiff = (time - prevTime) / 1000;
             } else {
-                time_diff = 0;
+                timeDiff = 0;
             }
 
-            time_elapsed += time_diff * frame_rate;
-            prev_time = time;
-            frameIndex = Math.round(time_elapsed);
+            timeElapsed += timeDiff * frameRateLocal;
+            prevTime = time;
+            frameIndex = Math.round(timeElapsed);
         }
-        const fraction = point_distance / total_distance;
+        const fraction = pointDistance / totalDistance;
         splLines.push(`${frameIndex} ${fraction}`);
         index++;
     }
@@ -186,33 +201,15 @@ function generateSPL(trackPoints, frameRate, compressedFrames = null) {
 // --- Elevation support functions ---
 
 // Generate SVG for elevation profile
-function generateElevationSVG(
-    trackPoints,
-    mainColor,
-    shadowColor,
-    mainWidth,
-    shadowWidth,
-    shadowOffset,
-    svgWidth,
-    svgHeight,
-    showGrid = false,
-    fillColor = null,
-    dotSize = 10
-) {
+function generateElevationSVG(trackPoints, mainColor, shadowColor, mainWidth, shadowWidth, shadowOffset, svgWidth, svgHeight, showGrid = false, fillColor = null, dotSize = 10) {
     let minEle = Infinity;
     let maxEle = -Infinity;
 
-    trackPoints.forEach(pt => {
-        const eleNode = pt.getElementsByTagName('ele')[0];
+    trackPoints.forEach(point => {
+        const ele = point.ele;
 
-        if (eleNode) {
-            const val = parseFloat(eleNode.textContent);
-
-            if (!isNaN(val)) {
-                if (val < minEle) minEle = val;
-                if (val > maxEle) maxEle = val;
-            }
-        }
+        if (ele < minEle) minEle = ele;
+        if (ele > maxEle) maxEle = ele;
     });
 
     if (minEle === Infinity || maxEle === -Infinity) {
@@ -233,12 +230,13 @@ function generateElevationSVG(
     const margin = Math.max(10, dotOutlineRadius + shadowOffset + shadowWidth);
 
     // Reserve extra space at the bottom for x-axis labels when grid is enabled
-    const extraHeight = showGrid ? 40 : 0;
-    const finalHeight = svgHeight + extraHeight;
-    const viewBoxWidth = svgWidth + 2 * margin;
+    const extraSpacing = showGrid ? 40 : 0;
+    const finalHeight = svgHeight + extraSpacing;
+    const finalWidth = svgWidth;
+    const viewBoxWidth = finalWidth + 2 * margin;
     const viewBoxHeight = finalHeight + 2 * margin;
 
-    svg.setAttribute('width', svgWidth);
+    svg.setAttribute('width', finalWidth);
     // Set the total height so that labels fit inside the canvas (excluding margin)
     svg.setAttribute('height', finalHeight);
     // Use a viewBox that includes the computed margin on all sides
@@ -246,30 +244,18 @@ function generateElevationSVG(
 
     // Determine total distance in km for x-axis labels if grid is shown
     let totalDistanceKm = 0;
+    let prevLat = null;
+    let prevLon = null;
+    trackPoints.forEach(point => {
+        const lat = point.lat;
+        const lon = point.lon;
 
-    if (showGrid) {
-        // compute using haversine formula as in generateSPL but convert to km
-        let prev_lat = null;
-        let prev_lon = null;
-        const earthRadiusKm = 6371.0;
-        trackPoints.forEach(pt => {
-            const lat = parseFloat(pt.getAttribute('lat'));
-            const lon = parseFloat(pt.getAttribute('lon'));
-
-            if (prev_lat !== null && prev_lon !== null) {
-                const dlat = radians(lat - prev_lat);
-                const dlon = radians(lon - prev_lon);
-                const a =
-                    Math.sin(dlat / 2) ** 2 +
-                    Math.cos(radians(prev_lat)) * Math.cos(radians(lat)) * Math.sin(dlon / 2) ** 2;
-                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-                totalDistanceKm += earthRadiusKm * c;
-            }
-            prev_lat = lat;
-            prev_lon = lon;
-        });
-    }
+        if (prevLat !== null && prevLon !== null) {
+            totalDistanceKm += distanceInKm(prevLat, prevLon, lat, lon);
+        }
+        prevLat = lat;
+        prevLon = lon;
+    });
 
     // Create main path and optionally shadow/fill
     const mainPath = document.createElementNS(svgNS, 'path');
@@ -307,17 +293,15 @@ function generateElevationSVG(
     let mainPathData = '';
     let shadowPathData = '';
     const pointCount = trackPoints.length;
-    const xInc = pointCount > 1 ? svgWidth / (pointCount - 1) : 0;
+    //const xInc = pointCount > 1 ? svgWidth / (pointCount - 1) : 0; //xInc is different between points based on real distance traveled
+    let totalX = 0;
 
-    trackPoints.forEach((pt, idx) => {
-        const eleNode = pt.getElementsByTagName('ele')[0];
-        let eleVal = 0;
+    trackPoints.forEach((point, idx) => {
+        let eleVal = point.ele;
 
-        if (eleNode) {
-            const val = parseFloat(eleNode.textContent);
-            if (!isNaN(val)) eleVal = val;
-        }
-        const x = idx * xInc;
+        const xInc = pointCount > 1 && idx > 0 ? (svgWidth * distanceInKm(trackPoints[idx - 1].lat, trackPoints[idx - 1].lon, point.lat, point.lon)) / totalDistanceKm : 0;
+        totalX += xInc;
+        const x = totalX;
         const y = svgHeight - (eleVal - minEle) * (svgHeight / eleRange);
 
         mainPathData += `${x},${y} `;
@@ -415,18 +399,8 @@ function generateElevationSVG(
     return svg;
 }
 
-// Generate SPL for elevation profile
-// Generate SPL for elevation profile. This function maps the travelled distance
-// along the GPX track to the horizontal position in the elevation graph and
-// computes fractions based on the pixel length of the elevation path. The
-// svgWidth and svgHeight parameters correspond to the user‑defined size of
-// the elevation SVG (excluding margins). By using this mapping, the animated
-// dot moves in sync with the GPS track even when the visible elevation path
-// has uniform spacing.
 function generateElevationSPL(trackPoints, frameRate, svgWidth, svgHeight, compressedFrames = null) {
-    const frame_rate = parseInt(frameRate, 10);
-    let time_elapsed = 0;
-    let prev_time = null;
+    const frameRateLocal = parseInt(frameRate, 10);
     const splLines = ['DFSP'];
     const totalPoints = trackPoints.length;
 
@@ -434,111 +408,81 @@ function generateElevationSPL(trackPoints, frameRate, svgWidth, svgHeight, compr
         return splLines.join('\n');
     }
 
-    // Precompute cumulative distances along the track (in km) and total distance
-    const cumulativeDistances = new Array(totalPoints).fill(0);
-    let totalDistanceKm = 0;
-    {
-        let prev_lat_d = null;
-        let prev_lon_d = null;
-        const earthRadiusKm = 6371.0;
-        for (let i = 0; i < totalPoints; i++) {
-            const trkpt = trackPoints[i];
-            const lat = parseFloat(trkpt.getAttribute('lat'));
-            const lon = parseFloat(trkpt.getAttribute('lon'));
-            if (prev_lat_d !== null && prev_lon_d !== null) {
-                const dlat = radians(lat - prev_lat_d);
-                const dlon = radians(lon - prev_lon_d);
-                const a = Math.sin(dlat / 2) ** 2 + Math.cos(radians(prev_lat_d)) * Math.cos(radians(lat)) * Math.sin(dlon / 2) ** 2;
-                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-                const dist = earthRadiusKm * c;
-                totalDistanceKm += dist;
-                cumulativeDistances[i] = totalDistanceKm;
-            } else {
-                cumulativeDistances[i] = 0;
-            }
-            prev_lat_d = lat;
-            prev_lon_d = lon;
-        }
-    }
     // Compute elevation values and min/max to map to pixel height
     let minEle = Infinity;
     let maxEle = -Infinity;
     const eleValues = new Array(totalPoints);
     for (let i = 0; i < totalPoints; i++) {
-        const eleNode = trackPoints[i].getElementsByTagName('ele')[0];
-        let val;
-        if (eleNode) {
-            val = parseFloat(eleNode.textContent);
-        }
-        if (isNaN(val)) {
-            val = 0;
-        }
+        let val = trackPoints[i].ele;
         eleValues[i] = val;
         if (val < minEle) minEle = val;
         if (val > maxEle) maxEle = val;
     }
     const eleRange = maxEle - minEle || 1;
-    // Uniform x and y positions for the visible path
-    const xUniform = new Array(totalPoints);
-    const yUniform = new Array(totalPoints);
-    const xInc = totalPoints > 1 ? svgWidth / (totalPoints - 1) : 0;
-    for (let i = 0; i < totalPoints; i++) {
-        const x = i * xInc;
-        xUniform[i] = x;
-        const y = svgHeight - (eleValues[i] - minEle) * (svgHeight / eleRange);
-        yUniform[i] = y;
-    }
-    // Compute cumulative pixel lengths along the visible path
-    const cumPixelLengths = new Array(totalPoints).fill(0);
-    let totalPixelLength = 0;
-    for (let i = 1; i < totalPoints; i++) {
-        const dx = xUniform[i] - xUniform[i - 1];
-        const dy = yUniform[i] - yUniform[i - 1];
-        const segLen = Math.sqrt(dx * dx + dy * dy);
-        totalPixelLength += segLen;
-        cumPixelLengths[i] = totalPixelLength;
+
+    const cumulativeDistances = new Array(totalPoints).fill(0);
+    const cumulativePathLengths = new Array(totalPoints).fill(0);
+    let totalDistanceKm = 0;
+    let totalPathLength = 0;
+    {
+        let prevLatD = null;
+        let prevLonD = null;
+        let prevEle = null;
+        for (let i = 0; i < totalPoints; i++) {
+            const point = trackPoints[i];
+            const lat = point.lat;
+            const lon = point.lon;
+            const ele = point.ele;
+            if (prevLatD !== null && prevLonD !== null && prevEle !== null) {
+                const dist = distanceInKm(prevLatD, prevLonD, lat, lon);
+                totalDistanceKm += dist;
+                cumulativeDistances[i] = totalDistanceKm;
+
+                const elevDiff = (ele - prevEle) * (svgHeight / eleRange) * 100; // scale elevation difference to pixel space
+
+                const pathDist = Math.sqrt(dist * dist + elevDiff * elevDiff);
+                totalPathLength += pathDist;
+                cumulativePathLengths[i] = totalPathLength;
+            } else {
+                cumulativeDistances[i] = 0;
+                cumulativePathLengths[i] = 0;
+            }
+
+            prevLatD = lat;
+            prevLonD = lon;
+            prevEle = ele;
+        }
     }
 
+    console.log(svgHeight / eleRange, eleRange, svgHeight, totalDistanceKm);
+
     // Generate each SPL line
+    let prevTime = null;
+    let timeElapsed = 0;
     for (let i = 0; i < totalPoints; i++) {
         // Determine frame index
         let frameIndex;
         if (compressedFrames) {
             frameIndex = compressedFrames[i];
         } else {
-            const trkpt = trackPoints[i];
-            const timeStr = trkpt.querySelector('time').textContent;
-            if (prev_time !== null) {
-                const prevDate = new Date(prev_time);
-                const currDate = new Date(timeStr);
-                const diff = (currDate - prevDate) / 1000;
-                time_elapsed += diff * frame_rate;
+            const point = trackPoints[i];
+            const currTime = point.time;
+            if (prevTime !== null && currTime !== null) {
+                const diff = (currTime - prevTime) / 1000;
+                timeElapsed += diff * frameRateLocal;
             }
-            prev_time = trackPoints[i].querySelector('time').textContent;
-            frameIndex = Math.round(time_elapsed);
+            prevTime = point.time;
+            frameIndex = Math.round(timeElapsed);
         }
+
         // Compute the fraction mapping distance to pixel length
         let fraction;
-        if (totalDistanceKm > 0 && totalPixelLength > 0) {
-            // Fraction of total distance travelled
-            const s = cumulativeDistances[i] / totalDistanceKm;
-            // Map s to the corresponding pixel fraction along the arc length
-            const pos = s * (totalPoints - 1);
-            const idxLow = Math.floor(pos);
-            const alpha = pos - idxLow;
-            let pixelFraction;
-            if (idxLow >= totalPoints - 1) {
-                pixelFraction = 1;
-            } else {
-                const pLow = cumPixelLengths[idxLow] / totalPixelLength;
-                const pHigh = cumPixelLengths[idxLow + 1] / totalPixelLength;
-                pixelFraction = pLow + alpha * (pHigh - pLow);
-            }
-            fraction = pixelFraction;
+        if (totalPathLength > 0) {
+            fraction = cumulativePathLengths[i] / totalPathLength;
         } else {
-            // If no distance or pixel length, fallback to uniform fraction
-            fraction = totalPoints > 1 ? i / (totalPoints - 1) : 0;
+            fraction = 0;
         }
+
         splLines.push(`${frameIndex} ${fraction}`);
     }
 
@@ -552,7 +496,7 @@ function generateElevationSPL(trackPoints, frameRate, svgWidth, svgHeight, compr
 // indices for each track point and the total new duration in seconds. The
 // frame rate must be supplied by the caller via the frame rate input.
 function computeCompressedFrames(trackPoints, frameRate, pauseThreshold, distanceThreshold, timeGapThreshold) {
-    const frame_rate = parseInt(frameRate, 10);
+    const frameRateLocal = parseInt(frameRate, 10);
     const len = trackPoints.length;
 
     if (len === 0) {
@@ -566,11 +510,11 @@ function computeCompressedFrames(trackPoints, frameRate, pauseThreshold, distanc
     const gapThresholdSec = parseFloat(timeGapThreshold);
     // Build an array of original absolute times (seconds relative to start)
     const originalTimes = new Array(len);
-    const baseTime = new Date(trackPoints[0].querySelector('time').textContent);
+    const baseTime = trackPoints[0].time;
     originalTimes[0] = 0;
 
     for (let i = 1; i < len; i++) {
-        const currTime = new Date(trackPoints[i].querySelector('time').textContent);
+        const currTime = trackPoints[i].time;
         originalTimes[i] = (currTime - baseTime) / 1000;
     }
 
@@ -617,21 +561,15 @@ function computeCompressedFrames(trackPoints, frameRate, pauseThreshold, distanc
     }
 
     // Compute haversine distances (in km) between consecutive points
-    const earthRadiusKm = 6371.0;
     const distances = new Array(len);
     distances[0] = 0;
 
     for (let i = 1; i < len; i++) {
-        const prevLat = parseFloat(trackPoints[i - 1].getAttribute('lat'));
-        const prevLon = parseFloat(trackPoints[i - 1].getAttribute('lon'));
-        const currLat = parseFloat(trackPoints[i].getAttribute('lat'));
-        const currLon = parseFloat(trackPoints[i].getAttribute('lon'));
-        const dlat = radians(currLat - prevLat);
-        const dlon = radians(currLon - prevLon);
-        const a =
-            Math.sin(dlat / 2) ** 2 + Math.cos(radians(prevLat)) * Math.cos(radians(currLat)) * Math.sin(dlon / 2) ** 2;
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        distances[i] = earthRadiusKm * c;
+        const prevLat = trackPoints[i - 1].lat;
+        const prevLon = trackPoints[i - 1].lon;
+        const currLat = trackPoints[i].lat;
+        const currLon = trackPoints[i].lon;
+        distances[i] = distanceInKm(prevLat, prevLon, currLat, currLon);
     }
 
     const removedSegments = [];
@@ -718,7 +656,7 @@ function computeCompressedFrames(trackPoints, frameRate, pauseThreshold, distanc
     // Calculate new duration after removing idle segments
     const newDuration = processedTimes[len - 1] - totalRemoved;
     // Convert times to frame indices
-    const compressedFrames = compressedTimes.map(t => Math.round(t * frame_rate));
+    const compressedFrames = compressedTimes.map(t => Math.round(t * frameRateLocal));
 
     return { compressedFrames, newDuration };
 }
@@ -800,8 +738,8 @@ function calculateTotalDuration(trackPoints) {
     let totalDuration = 0;
 
     for (let i = 1; i < trackPoints.length; i++) {
-        const prevTime = new Date(trackPoints[i - 1].querySelector('time').textContent);
-        const currentTime = new Date(trackPoints[i].querySelector('time').textContent);
+        const prevTime = trackPoints[i - 1].time;
+        const currentTime = trackPoints[i].time;
         const timeDiffInSeconds = (currentTime - prevTime) / 1000;
         totalDuration += timeDiffInSeconds;
     }
@@ -833,9 +771,7 @@ function generateSlightlyDifferentColor(color) {
     const newR = Math.round(r * colorDifferenceFactor);
     const newG = Math.round(g * colorDifferenceFactor);
     const newB = Math.round(b * colorDifferenceFactor);
-    const newHexColor = `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB
-        .toString(16)
-        .padStart(2, '0')}`;
+    const newHexColor = `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
 
     return newHexColor;
 }
@@ -871,33 +807,14 @@ function handleFile() {
             const gpxData = e.target.result;
             const parser = new DOMParser();
             const xmlDoc = parser.parseFromString(gpxData, 'text/xml');
-            const trackPoints = xmlDoc.querySelectorAll('trkpt');
+            const gpxTrackPoints = xmlDoc.querySelectorAll('trkpt');
+            const trackPoints = parseTrackPoints(gpxTrackPoints);
             // Route SVG
-            const routeSvg = generateSVG(
-                trackPoints,
-                mainColor,
-                shadowColor,
-                mainWidth,
-                shadowWidth,
-                shadowOffset,
-                dotSize
-            );
+            const routeSvg = generateSVG(trackPoints, mainColor, shadowColor, mainWidth, shadowWidth, shadowOffset, dotSize);
             svgContainer.innerHTML = '';
             svgContainer.appendChild(routeSvg);
             // Elevation SVG
-            const elevationSvg = generateElevationSVG(
-                trackPoints,
-                altMainColor,
-                altShadowColor,
-                altMainWidth,
-                altShadowWidth,
-                altShadowOffset,
-                altWidth,
-                altHeight,
-                altShowGrid,
-                altFillColor,
-                dotSize
-            );
+            const elevationSvg = generateElevationSVG(trackPoints, altMainColor, altShadowColor, altMainWidth, altShadowWidth, altShadowOffset, altWidth, altHeight, altShowGrid, altFillColor, dotSize);
             elevationContainer.innerHTML = '';
             elevationContainer.appendChild(elevationSvg);
         };
@@ -965,7 +882,8 @@ splDownloadButton.addEventListener('click', () => {
             const gpxData = e.target.result;
             const parser = new DOMParser();
             const xmlDoc = parser.parseFromString(gpxData, 'text/xml');
-            const trackPoints = xmlDoc.querySelectorAll('trkpt');
+            const gpxTrackPoints = xmlDoc.querySelectorAll('trkpt');
+            const trackPoints = parseTrackPoints(gpxTrackPoints);
             // Determine whether to remove idle segments
             const removePauses = document.getElementById('removePauses').checked;
             const threshold = document.getElementById('pauseThreshold').value;
@@ -977,13 +895,7 @@ splDownloadButton.addEventListener('click', () => {
             if (removePauses) {
                 // Compute compressed frames and adjusted duration using thresholds
                 const frameRate = document.getElementById('frameRate').value;
-                compressedFramesInfo = computeCompressedFrames(
-                    trackPoints,
-                    frameRate,
-                    threshold,
-                    distThreshold,
-                    gapThreshold
-                );
+                compressedFramesInfo = computeCompressedFrames(trackPoints, frameRate, threshold, distThreshold, gapThreshold);
                 totalDuration = compressedFramesInfo.newDuration;
             } else {
                 totalDuration = calculateTotalDuration(trackPoints);
@@ -1009,7 +921,8 @@ altSplDownloadButton.addEventListener('click', () => {
             const gpxData = e.target.result;
             const parser = new DOMParser();
             const xmlDoc = parser.parseFromString(gpxData, 'text/xml');
-            const trackPoints = xmlDoc.querySelectorAll('trkpt');
+            const gpxTrackPoints = xmlDoc.querySelectorAll('trkpt');
+            const trackPoints = parseTrackPoints(gpxTrackPoints);
             const removePauses = document.getElementById('removePauses').checked;
             const threshold = document.getElementById('pauseThreshold').value;
             const distThreshold = document.getElementById('distanceThreshold').value;
@@ -1019,13 +932,7 @@ altSplDownloadButton.addEventListener('click', () => {
 
             if (removePauses) {
                 const frameRate = document.getElementById('frameRate').value;
-                compressedFramesInfo = computeCompressedFrames(
-                    trackPoints,
-                    frameRate,
-                    threshold,
-                    distThreshold,
-                    gapThreshold
-                );
+                compressedFramesInfo = computeCompressedFrames(trackPoints, frameRate, threshold, distThreshold, gapThreshold);
                 totalDuration = compressedFramesInfo.newDuration;
             } else {
                 totalDuration = calculateTotalDuration(trackPoints);
